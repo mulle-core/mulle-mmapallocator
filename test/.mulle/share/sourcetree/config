@@ -1,0 +1,2 @@
+mulle-testallocator;${MULLE_TESTALLOCATOR_NODETYPE:-tar};no-import,no-singlephase;CC05EBAC-8819-4041-BA41-35850EA32A17;${MULLE_TESTALLOCATOR_URL:-https://github.com/mulle-core/mulle-testallocator/archive/${MULLE_TAG}.tar.gz};;${MULLE_TESTALLOCATOR_TAG:-latest};;
+mulle-mmapallocator;${MULLE_MMAPALLOCATOR_NODETYPE:-tar};;B1BC631E-2238-427C-8126-4D3561407932;${MULLE_MMAPALLOCATOR_URL:-https://github.com/nat/mulle-mmapallocator/archive/${MULLE_TAG}.tar.gz};;${MULLE_MMAPALLOCATOR_TAG:-latest};;
