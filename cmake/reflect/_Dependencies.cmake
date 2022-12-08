@@ -15,6 +15,7 @@ endif()
 # Generated from sourcetree: B9E896FB-FE26-42ED-9F81-88681FD3BD2F;mulle-mmap;no-all-load,no-cmake-loader,no-cmake-searchpath,no-import,no-public;
 # Disable with : `mulle-sourcetree mark mulle-mmap no-link`
 # Disable for this platform: `mulle-sourcetree mark mulle-mmap no-cmake-platform-${MULLE_UNAME}`
+# Disable for a sdk: `mulle-sourcetree mark mulle-mmap no-cmake-sdk-<name>`
 #
 if( NOT MULLE_MMAP_LIBRARY)
    find_library( MULLE_MMAP_LIBRARY NAMES ${CMAKE_STATIC_LIBRARY_PREFIX}mulle-mmap${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX} ${CMAKE_STATIC_LIBRARY_PREFIX}mulle-mmap${CMAKE_STATIC_LIBRARY_SUFFIX} mulle-mmap NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH)
@@ -86,6 +87,7 @@ endif()
 # Generated from sourcetree: B573B25A-C194-4492-A953-01D0843B21B3;mulle-allocator;no-all-load,no-cmake-loader,no-cmake-searchpath,no-import;
 # Disable with : `mulle-sourcetree mark mulle-allocator no-link`
 # Disable for this platform: `mulle-sourcetree mark mulle-allocator no-cmake-platform-${MULLE_UNAME}`
+# Disable for a sdk: `mulle-sourcetree mark mulle-allocator no-cmake-sdk-<name>`
 #
 if( NOT MULLE_ALLOCATOR_LIBRARY)
    find_library( MULLE_ALLOCATOR_LIBRARY NAMES ${CMAKE_STATIC_LIBRARY_PREFIX}mulle-allocator${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX} ${CMAKE_STATIC_LIBRARY_PREFIX}mulle-allocator${CMAKE_STATIC_LIBRARY_SUFFIX} mulle-allocator NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH)

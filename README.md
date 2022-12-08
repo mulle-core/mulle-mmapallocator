@@ -1,13 +1,13 @@
 # mulle-mmapallocator
 
-#### 🌍 mulle-mmapallocator a mulle-allocator that  memory mapped memory
+#### 🌍 mulle-mmapallocator a mulle-allocator that shared memory
 
-mulle-mmapallocator can be used to create shared memory allocations. Due to
-cross-platform considerations, the memory to be shared with the other
-processes must be pre-allocated at initialization time.
+mulle-mmapallocator can be used to create memory allocations shared across
+process boundaries. Due to cross-platform considerations, the memory to be
+shared with the other processes must be pre-allocated at initialization time.
 
-mulle-mmapallocator can be also used to create a separate allocation
-space, which can then be easily reclaimed by destroying the allocator.
+mulle-mmapallocator can also be used to create a separate allocation
+space, which can then easily be reclaimed by destroying the allocator.
 
 ## Example
 

@@ -45,21 +45,25 @@ static void   mmap_free( void *p, struct mulle_allocator *allocator)
 }
 
 
-static void   __mulle_mmap_allocator_init_with_mspace( struct mulle_mmap_allocator *p,
-                                                       mspace *m,
-                                                       void *base,
-                                                       size_t capacity,
-                                                       int mode)
+static void   __mulle_mmap_allocator_init( struct mulle_mmap_allocator *p)
 {
-   assert( p);
-   assert( m);
-
    p->calloc   = mmap_calloc;
    p->realloc  = mmap_realloc;
    p->free     = mmap_free;
    p->fail     = mulle_allocation_fail,
    p->abafree  = mulle_aba_abort,
    p->aba      = 0;
+}
+
+
+static void   __mulle_mmap_allocator_set_mspace( struct mulle_mmap_allocator *p,
+                                                 mspace *m,
+                                                 void *base,
+                                                 size_t capacity,
+                                                 int mode)
+{
+   assert( p);
+   assert( m);
 
    p->mspace   = m;
    p->base     = base;
@@ -74,18 +78,36 @@ void   _mulle_mmap_allocator_init( struct mulle_mmap_allocator *p,
 {
    mspace  *mspace;
    void    *base;
+   size_t   pagesize;
+   size_t   n_pages;
 
    base = NULL;
+
+   __mulle_mmap_allocator_init( p);
+
+   // zero capacity may lead to mmap failing, and we need enough room for
+   // mspace
+   pagesize = mulle_mmap_get_system_pagesize();
+   n_pages  = (capacity / pagesize) + (capacity % pagesize) ? 1 : 0;
+   if( n_pages == 0)
+      n_pages = 1;
+   capacity = n_pages * pagesize;
 
    if( mode & mulle_mmap_allocator_shared)
    {
       base  = mulle_mmap_alloc_shared_pages( capacity);
+      if( ! base)
+         (*p->fail)( mulle_mmap_allocator_as_allocator( p), base, capacity);
       mode |= mulle_mmap_allocator_inflexible;
    }
    else
    {
       if( mode & mulle_mmap_allocator_inflexible)
+      {
          base = mulle_mmap_alloc_pages( capacity);
+         if( ! base)
+            (*p->fail)( mulle_mmap_allocator_as_allocator( p), base, capacity);
+      }
    }
 
    if( ! base)
@@ -93,7 +115,10 @@ void   _mulle_mmap_allocator_init( struct mulle_mmap_allocator *p,
    else
       mspace = create_mspace_with_base( base, capacity, mode & (mulle_mmap_allocator_inflexible|mulle_mmap_allocator_locking));
 
-   __mulle_mmap_allocator_init_with_mspace( p, mspace, base, capacity, mode);
+   if( ! mspace)
+      (*p->fail)( mulle_mmap_allocator_as_allocator( p), base, capacity);
+
+   __mulle_mmap_allocator_set_mspace( p, mspace, base, capacity, mode);
 }
 
 

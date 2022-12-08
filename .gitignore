@@ -33,3 +33,4 @@ test*/**/*.dSYM/
 version.old
 .gdb_history
 src/mulle-dlalloc 
+.ackrc
