@@ -1,0 +1,19 @@
+{
+   "name" : "mulle-mmapallocator",
+   "version" : "0.0.1",
+   "description" : "🌍 mulle-mmapallocator a mulle-allocator that shared memory",
+   "homepage" : "https://github.com/mulle-core/mulle-mmapallocator",
+   "bugs" : "https://github.com/mulle-core/mulle-mmapallocator/issues",
+   "keywords" : [],
+   "license" : "UNLICENSED",
+   "repository" : {
+      "type" : "git",
+      "url" : "mulle-core/mulle-mmapallocator"
+   },
+   "dependencies" : {
+      "mulle-mmap" : "git://github.com/mulle-core/mulle-mmap",
+      "mulle-c11" : "git://github.com/mulle-c/mulle-c11",
+      "mulle-allocator" : "git://github.com/mulle-c/mulle-allocator",
+      "mulle-dlmalloc" : "git://github.com/mulle-core/mulle-dlmalloc"
+   }
+}
