@@ -34,3 +34,6 @@ version.old
 .gdb_history
 src/mulle-dlalloc 
 .ackrc
+wilted/
+mulle-template-composer-*
+mulle-markdown-preview-*.html
