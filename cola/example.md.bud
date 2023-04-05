@@ -1,0 +1,18 @@
+## Example
+
+``` c
+struct mulle_mmap_allocator   mmap_allocator;
+struct mulle_allocator        *allocator;
+char                          *s;
+
+mulle_mmap_allocator_init( &mmap_allocator, 0, mulle_mmap_allocator_default);
+allocator = mulle_mmap_allocator_as_allocator( &mmap_allocator);
+
+s = mulle_allocator_strdup( allocator, "VfL Bochum 1848");
+printf( "%s\n", s);
+mulle_allocator_free( allocator, s);
+
+mulle_mmap_allocator_done( &mmap_allocator);
+```
+
+
