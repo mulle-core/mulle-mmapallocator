@@ -1,0 +1,31 @@
+{
+   project =
+   {
+      description="🌍 mulle-mmapallocator a mulle-allocator that shared memory";
+      domain="github";
+      name="mulle-mmapallocator";
+      user="mulle-core";
+      repo="mulle-mmapallocator";
+      homepage="https://github.com/mulle-core/mulle-mmapallocator";
+      license="BSD-3-Clause"
+   };
+   dependencies =
+   (
+      {
+         description="🇧🇿 Memory mapped file access";
+         domain="github";
+         name="mulle-mmap";
+         repo="mulle-mmap";
+         url="https://github.com/mulle-core/mulle-mmap";
+         user="mulle-core";
+      },
+      {
+         description="🔄 Flexible C memory allocation scheme";
+         domain="github";
+         name="mulle-allocator";
+         repo="mulle-allocator";
+         url="https://github.com/mulle-c/mulle-allocator";
+         user="mulle-c";
+      }
+   )
+}

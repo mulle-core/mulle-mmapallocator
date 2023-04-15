@@ -1,6 +1,6 @@
 {
    "name" : "mulle-mmapallocator",
-   "version" : "0.0.1",
+   "version" : "0.0.2",
    "description" : "mulle-mmapallocator a mulle-allocator that shared memory",
    "keywords" : [],
    "license" : "BSD-3-Clause",
