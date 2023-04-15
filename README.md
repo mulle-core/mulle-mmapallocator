@@ -9,46 +9,57 @@ shared with the other processes must be pre-allocated at initialization time.
 mulle-mmapallocator can also be used to create a separate allocation
 space, which can then easily be reclaimed by destroying the allocator.
 
-## Example
 
-``` c
-struct mulle_mmap_allocator   mmap_allocator;
-struct mulle_allocator        *allocator;
-char                          *s;
+| Release Version                                       | Release Notes
+|-------------------------------------------------------|--------------
+| ![Mulle kybernetiK tag](https://img.shields.io/github/tag/mulle-core/mulle-mmapallocator.svg?branch=release) [![Build Status](https://github.com/mulle-core/mulle-mmapallocator/workflows/CI/badge.svg?branch=release)](//github.com/mulle-core/mulle-mmapallocator/actions)| [RELEASENOTES](RELEASENOTES.md) |
 
-mulle_mmap_allocator_init( &mmap_allocator, 0, mulle_mmap_allocator_default);
-allocator = mulle_mmap_allocator_as_allocator( &mmap_allocator);
 
-s = mulle_allocator_strdup( allocator, "VfL Bochum 1848");
-printf( "%s\n", s);
-mulle_allocator_free( allocator, s);
 
-mulle_mmap_allocator_done( &mmap_allocator);
+
+
+
+
+## Add
+
+Use [mulle-sde](//github.com/mulle-sde) to add mulle-mmapallocator to your project:
+
+``` sh
+mulle-sde add github:mulle-core/mulle-mmapallocator
 ```
 
+To only add the sources of mulle-mmapallocator with dependency
+sources use [clib](https://github.com/clibs/clib):
 
-## mulle-sde
 
-This is a [mulle-sde](//github.com/mulle-sde) project. mulle-sde combines
-recursive package management with cross-platform builds via **cmake**:
+``` sh
+clib install --out src/mulle-core mulle-core/mulle-mmapallocator
+```
 
-| Action  | Command                               | Description   |
-|---------|---------------------------------------|---------------|
-| Build   | `mulle-sde craft [--release|--debug]` | Builds into local `kitchen` folder |
-| Add     | `mulle-sde dependency add --c --github mulle-core mulle-mmapallocator` | Add | mulle-mmapallocator to another mulle-sde project as a dependency |
-| Install | `mulle-sde install --prefix /usr/local | https://github.com/<|GITHUB_USER|>/mulle-mmapallocator.git` | Like `make install`|
+Add `-isystem src/mulle-core` to your `CFLAGS` and compile all the sources that were downloaded with your project.
 
+
+## Install
+
+### Install with mulle-sde
+
+Use [mulle-sde](//github.com/mulle-sde) to build and install mulle-mmapallocator and all dependencies:
+
+``` sh
+mulle-sde install --prefix /usr/local \
+   https://github.com/mulle-core/mulle-mmapallocator/archive/latest.tar.gz
+```
 
 ### Manual Installation
 
-
 Install the requirements:
 
-|Requirements                                             | Description       |
-|---------------------------------------------------------|-------------------|
-|[mulle-allocator](//github.com/mulle-c/[mulle-allocator) | Some requirement  |
+| Requirements                                 | Description
+|----------------------------------------------|-----------------------
+| [mulle-mmap](https://github.com/mulle-core/mulle-mmap)             | 🇧🇿 Memory mapped file access
+| [mulle-allocator](https://github.com/mulle-c/mulle-allocator)             | 🔄 Flexible C memory allocation scheme
 
-Install into `/usr/local`:
+Install **mulle-mmapallocator** into `/usr/local` with [cmake](https://cmake.org):
 
 ``` sh
 cmake -B build \
@@ -59,10 +70,8 @@ cmake --build build --config Release &&
 cmake --install build --config Release
 ```
 
+## Author
 
-<!--
-extension : mulle-sde/sde
-directory : demo/library
-template  : .../README.md
-Suppress this comment with `export MULLE_SDE_GENERATE_FILE_COMMENTS=NO`
--->
+[Nat!](https://mulle-kybernetik.com/weblog) for Mulle kybernetiK
+
+
