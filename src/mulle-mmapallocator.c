@@ -17,7 +17,7 @@ int   __MULLE_MMAPALLOCATOR_ranlib__;
 
 uint32_t   mulle_mmapallocator_get_version( void)
 {
-   return( MULLE_MMAPALLOCATOR_VERSION);
+   return( MULLE__MMAPALLOCATOR_VERSION);
 }
 
 

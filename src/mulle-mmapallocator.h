@@ -10,24 +10,24 @@
  *
  *  version:  major, minor, patch
  */
-#define MULLE_MMAPALLOCATOR_VERSION  ((0 << 20) | (0 << 8) | 2)
+#define MULLE__MMAPALLOCATOR_VERSION  ((0 << 20) | (0 << 8) | 2)
 
 
 static inline unsigned int   mulle_mmapallocator_get_version_major( void)
 {
-   return( MULLE_MMAPALLOCATOR_VERSION >> 20);
+   return( MULLE__MMAPALLOCATOR_VERSION >> 20);
 }
 
 
 static inline unsigned int   mulle_mmapallocator_get_version_minor( void)
 {
-   return( (MULLE_MMAPALLOCATOR_VERSION >> 8) & 0xFFF);
+   return( (MULLE__MMAPALLOCATOR_VERSION >> 8) & 0xFFF);
 }
 
 
 static inline unsigned int   mulle_mmapallocator_get_version_patch( void)
 {
-   return( MULLE_MMAPALLOCATOR_VERSION & 0xFF);
+   return( MULLE__MMAPALLOCATOR_VERSION & 0xFF);
 }
 
 // mulle-c11 feature: MULLE_MMAPALLOCATOR__GLOBAL
