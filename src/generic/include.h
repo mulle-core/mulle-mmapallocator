@@ -26,7 +26,7 @@
 #include "_mulle-mmapallocator-include.h"
 
 // mulle-c11::feature...
-// #ifdef MULLE_MMAPALLOCATOR_BUILD
+// #ifdef MULLE__MMAPALLOCATOR_BUILD
 // # define MULLE_MMAPALLOCATOR_EXTERN_GLOBAL  MULLE_C_GLOBAL
 // #else
 // # define MULLE_MMAPALLOCATOR_EXTERN_GLOBAL  MULLE_C_EXTERN_GLOBAL
