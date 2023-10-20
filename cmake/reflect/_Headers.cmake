@@ -35,6 +35,7 @@ src/generic/include-private.h
 #
 set( PUBLIC_GENERATED_HEADERS
 src/reflect/_mulle-mmapallocator-include.h
+src/reflect/_mulle-mmapallocator-versioncheck.h
 )
 
 #
