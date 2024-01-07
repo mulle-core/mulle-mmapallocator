@@ -14,15 +14,18 @@
 #ifndef _mulle_mmapallocator_include_h__
 #define _mulle_mmapallocator_include_h__
 
-// You can tweak the following #include with these commands.
-// (Use B573B25A-C194-4492-A953-01D0843B21B3 instead of mulle-allocator if there are duplicate entries)
-//    remove #include:: `mulle-sde dependency mark mulle-allocator no-header`
-//    rename:              `mulle-sde dependency|library set mulle-allocator include whatever.h`
-//    reorder:             `mulle-sde dependency move mulle-allocator <up|down>`
-//    toggle #include:    `mulle-sde dependency mark mulle-allocator [no-]import`
-//    toggle public:       `mulle-sde dependency mark mulle-allocator [no-]public`
-//    toggle optional:     `mulle-sde dependency mark mulle-allocator [no-]require`
-//    remove for platform: `mulle-sde dependency mark mulle-allocator no-platform-<uname>`
+// To remove the following dependency (headers and library) completely:
+//   `mulle-sde dependency remove mulle-allocator`
+// (Use B573B25A-C194-4492-A953-01D0843B21B3 instead of mulle-allocator, if there are duplicate entries)
+//
+// You can tweak the following #include with these commands:
+//    remove #include: `mulle-sde dependency mark mulle-allocator no-header`
+//    rename              : `mulle-sde dependency|library set mulle-allocator include whatever.h`
+//    reorder             : `mulle-sde dependency move mulle-allocator <up|down>`
+//    toggle #include: `mulle-sde dependency mark mulle-allocator [no-]import`
+//    toggle public       : `mulle-sde dependency mark mulle-allocator [no-]public`
+//    toggle optional     : `mulle-sde dependency mark mulle-allocator [no-]require`
+//    remove for platform : `mulle-sde dependency mark mulle-allocator no-platform-<uname>`
 //        (use `mulle-sourcetree-to-c --unames` to list known values)
 #include <mulle-allocator/mulle-allocator.h>   // mulle-allocator
 
