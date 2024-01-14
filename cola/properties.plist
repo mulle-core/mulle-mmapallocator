@@ -7,7 +7,7 @@
       user="mulle-core";
       repo="mulle-mmapallocator";
       homepage="https://github.com/mulle-core/mulle-mmapallocator";
-      license="BSD-3-Clause"
+      license="BSD-3-Clause";
    };
    dependencies =
    (
@@ -27,5 +27,16 @@
          url="https://github.com/mulle-c/mulle-allocator";
          user="mulle-c";
       }
-   )
+   );
+   embedded =
+   (
+      {
+         description="Doug Lea's malloc.c extended for shared memory use.";
+         domain="github";
+         name="src/mulle-dlmalloc";
+         repo="mulle-dlmalloc";
+         url="https://github.com/mulle-core/mulle-dlmalloc";
+         user="mulle-core";
+      }
+   );
 }
