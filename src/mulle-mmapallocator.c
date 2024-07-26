@@ -51,7 +51,7 @@ static void   __mulle_mmap_allocator_init( struct mulle_mmap_allocator *p)
    p->realloc  = mmap_realloc;
    p->free     = mmap_free;
    p->fail     = mulle_allocation_fail,
-   p->abafree  = mulle_aba_abort,
+   p->abafree  = mulle_allocator_no_aba_abort,
    p->aba      = 0;
 }
 
