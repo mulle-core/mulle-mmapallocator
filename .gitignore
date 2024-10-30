@@ -42,3 +42,4 @@ coverage*.html
 *.gcno
 cola/wilted/
 src/mulle-dlmalloc
+research/
