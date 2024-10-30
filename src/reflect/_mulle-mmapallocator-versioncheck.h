@@ -7,10 +7,10 @@
 
 #if defined( MULLE__ALLOCATOR_VERSION)
 # ifndef MULLE__ALLOCATOR_VERSION_MIN
-#  define MULLE__ALLOCATOR_VERSION_MIN  ((6UL << 20) | (0 << 8) | 1)
+#  define MULLE__ALLOCATOR_VERSION_MIN  ((7UL << 20) | (0 << 8) | 0)
 # endif
 # ifndef MULLE__ALLOCATOR_VERSION_MAX
-#  define MULLE__ALLOCATOR_VERSION_MAX  ((7UL << 20) | (0 << 8) | 0)
+#  define MULLE__ALLOCATOR_VERSION_MAX  ((8UL << 20) | (0 << 8) | 0)
 # endif
 # if MULLE__ALLOCATOR_VERSION < MULLE__ALLOCATOR_VERSION_MIN
 #  error "mulle-allocator is too old"
@@ -22,7 +22,7 @@
 
 #if defined( MULLE__MMAP_VERSION)
 # ifndef MULLE__MMAP_VERSION_MIN
-#  define MULLE__MMAP_VERSION_MIN  ((0UL << 20) | (2 << 8) | 2)
+#  define MULLE__MMAP_VERSION_MIN  ((0UL << 20) | (2 << 8) | 3)
 # endif
 # ifndef MULLE__MMAP_VERSION_MAX
 #  define MULLE__MMAP_VERSION_MAX  ((0UL << 20) | (3 << 8) | 0)
