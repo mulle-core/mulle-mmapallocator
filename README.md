@@ -14,7 +14,7 @@ space, which can then easily be reclaimed by destroying the allocator.
 
 | Release Version                                       | Release Notes
 |-------------------------------------------------------|--------------
-| ![Mulle kybernetiK tag](https://img.shields.io/github/tag/mulle-core/mulle-mmapallocator.svg?branch=release) [![Build Status](https://github.com/mulle-core/mulle-mmapallocator/workflows/CI/badge.svg?branch=release)](//github.com/mulle-core/mulle-mmapallocator/actions) | [RELEASENOTES](RELEASENOTES.md) |
+| ![Mulle kybernetiK tag](https://img.shields.io/github/tag/mulle-core/mulle-mmapallocator.svg) [![Build Status](https://github.com/mulle-core/mulle-mmapallocator/workflows/CI/badge.svg)](//github.com/mulle-core/mulle-mmapallocator/actions) | [RELEASENOTES](RELEASENOTES.md) |
 
 
 
