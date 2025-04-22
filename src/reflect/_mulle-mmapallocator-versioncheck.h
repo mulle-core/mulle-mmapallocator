@@ -7,31 +7,38 @@
 
 #if defined( MULLE__ALLOCATOR_VERSION)
 # ifndef MULLE__ALLOCATOR_VERSION_MIN
-#  define MULLE__ALLOCATOR_VERSION_MIN  ((7UL << 20) | (0 << 8) | 0)
+#  define MULLE__ALLOCATOR_VERSION_MIN  ((7UL << 20) | (0 << 8) | 2)
 # endif
 # ifndef MULLE__ALLOCATOR_VERSION_MAX
 #  define MULLE__ALLOCATOR_VERSION_MAX  ((8UL << 20) | (0 << 8) | 0)
 # endif
-# if MULLE__ALLOCATOR_VERSION < MULLE__ALLOCATOR_VERSION_MIN
-#  error "mulle-allocator is too old"
-# endif
-# if MULLE__ALLOCATOR_VERSION >= MULLE__ALLOCATOR_VERSION_MAX
-#  error "mulle-allocator is too new"
+# if MULLE__ALLOCATOR_VERSION < MULLE__ALLOCATOR_VERSION_MIN || MULLE__ALLOCATOR_VERSION >= MULLE__ALLOCATOR_VERSION_MAX
+#  pragma message("MULLE__ALLOCATOR_VERSION     is " MULLE_C_STRINGIFY_MACRO( MULLE__ALLOCATOR_VERSION))
+#  pragma message("MULLE__ALLOCATOR_VERSION_MIN is " MULLE_C_STRINGIFY_MACRO( MULLE__ALLOCATOR_VERSION_MIN))
+#  pragma message("MULLE__ALLOCATOR_VERSION_MAX is " MULLE_C_STRINGIFY_MACRO( MULLE__ALLOCATOR_VERSION_MAX))
+#  if MULLE__ALLOCATOR_VERSION < MULLE__ALLOCATOR_VERSION_MIN
+#   error "mulle-allocator is too old"
+#  else
+#   error "mulle-allocator is too new"
+#  endif
 # endif
 #endif
-
 #if defined( MULLE__MMAP_VERSION)
 # ifndef MULLE__MMAP_VERSION_MIN
-#  define MULLE__MMAP_VERSION_MIN  ((0UL << 20) | (2 << 8) | 3)
+#  define MULLE__MMAP_VERSION_MIN  ((0UL << 20) | (2 << 8) | 5)
 # endif
 # ifndef MULLE__MMAP_VERSION_MAX
 #  define MULLE__MMAP_VERSION_MAX  ((0UL << 20) | (3 << 8) | 0)
 # endif
-# if MULLE__MMAP_VERSION < MULLE__MMAP_VERSION_MIN
-#  error "mulle-mmap is too old"
-# endif
-# if MULLE__MMAP_VERSION >= MULLE__MMAP_VERSION_MAX
-#  error "mulle-mmap is too new"
+# if MULLE__MMAP_VERSION < MULLE__MMAP_VERSION_MIN || MULLE__MMAP_VERSION >= MULLE__MMAP_VERSION_MAX
+#  pragma message("MULLE__MMAP_VERSION     is " MULLE_C_STRINGIFY_MACRO( MULLE__MMAP_VERSION))
+#  pragma message("MULLE__MMAP_VERSION_MIN is " MULLE_C_STRINGIFY_MACRO( MULLE__MMAP_VERSION_MIN))
+#  pragma message("MULLE__MMAP_VERSION_MAX is " MULLE_C_STRINGIFY_MACRO( MULLE__MMAP_VERSION_MAX))
+#  if MULLE__MMAP_VERSION < MULLE__MMAP_VERSION_MIN
+#   error "mulle-mmap is too old"
+#  else
+#   error "mulle-mmap is too new"
+#  endif
 # endif
 #endif
 
