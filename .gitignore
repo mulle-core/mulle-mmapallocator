@@ -43,3 +43,6 @@ coverage*.html
 cola/wilted/
 src/mulle-dlmalloc
 research/
+*.bak
+.mulle/etc/make/build-dir
+vgcore.*

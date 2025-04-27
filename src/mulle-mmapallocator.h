@@ -37,11 +37,12 @@ uint32_t   mulle_mmapallocator_get_version( void);
 
 enum mulle_mmap_allocator_bit
 {
-   mulle_mmap_allocator_default    = 0x0,
-   mulle_mmap_allocator_locking    = 0x1,
-   mulle_mmap_allocator_inflexible = 0x2,
-   mulle_mmap_allocator_shared     = 0x4,
-   mulle_mmap_allocator_dont_free  = 0x8
+   mulle_mmap_allocator_default       = 0x0,
+   mulle_mmap_allocator_locking       = 0x1,
+   mulle_mmap_allocator_inflexible    = 0x2,
+   mulle_mmap_allocator_shared        = 0x4,
+   mulle_mmap_allocator_dont_free     = 0x8,
+   mulle_mmap_allocator_dont_scribble = 0x10
 };
 
 
