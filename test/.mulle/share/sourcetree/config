@@ -1,1 +1,1 @@
-mulle-mmapallocator;${MULLE__MMAPALLOCATOR_NODETYPE:-tar};;A0A69289-65CF-4C52-8959-37D35AF87EB1;${MULLE__MMAPALLOCATOR_URL:-https://github.com/nat/mulle-mmapallocator/archive/${MULLE_TAG}.tar.gz};${MULLE__MMAPALLOCATOR_BRANCH};${MULLE__MMAPALLOCATOR_TAG:-latest};;
+mulle-mmapallocator;${MULLE__MMAPALLOCATOR_NODETYPE:-tar};;8852B84A-4238-4192-A0F9-D5503A12755D;${MULLE__MMAPALLOCATOR_URL:-https://github.com/mulle-nat/mulle-mmapallocator/archive/${MULLE_TAG}.tar.gz};${MULLE__MMAPALLOCATOR_BRANCH};${MULLE__MMAPALLOCATOR_TAG:-latest};;
