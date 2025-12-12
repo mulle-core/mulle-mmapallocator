@@ -25,7 +25,7 @@
 #endif
 #if defined( MULLE__MMAP_VERSION)
 # ifndef MULLE__MMAP_VERSION_MIN
-#  define MULLE__MMAP_VERSION_MIN  ((0UL << 20) | (2 << 8) | 5)
+#  define MULLE__MMAP_VERSION_MIN  ((0UL << 20) | (2 << 8) | 6)
 # endif
 # ifndef MULLE__MMAP_VERSION_MAX
 #  define MULLE__MMAP_VERSION_MAX  ((0UL << 20) | (3 << 8) | 0)
