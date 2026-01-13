@@ -8,7 +8,7 @@
 #
 cmake_minimum_required( VERSION 3.13...99.99)
 
-project( mulle-mmapallocator VERSION 0.1.1 LANGUAGES C)
+project( mulle-mmapallocator VERSION 0.1.2 LANGUAGES C)
 
 
 set( MULLE_PROJECT_TYPE "Library")
