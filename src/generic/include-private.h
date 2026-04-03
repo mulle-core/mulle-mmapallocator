@@ -1,5 +1,5 @@
-#ifndef mulle_mmapallocator_include_private_h__
-#define mulle_mmapallocator_include_private_h__
+#ifndef mulle__mmapallocator_include_private_h__
+#define mulle__mmapallocator_include_private_h__
 
 
 /* DO:    #include this files in sources
@@ -29,11 +29,3 @@
 /* You can add some more include statements here */
 
 #endif
-
-
-/*
- * extension : mulle-sde/c
- * directory : project-oneshot/all
- * template  : .../include-private.h
- * Suppress this comment with `export MULLE_SDE_GENERATE_FILE_COMMENTS=NO`
- */

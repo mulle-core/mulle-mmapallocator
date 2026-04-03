@@ -22,7 +22,7 @@
 //    remove #include: `mulle-sde dependency mark mulle-mmap no-header`
 //    rename              : `mulle-sde dependency|library set mulle-mmap include whatever.h`
 //    reorder             : `mulle-sde dependency move mulle-mmap <up|down>`
-//    toggle #include: `mulle-sde dependency mark mulle-mmap [no-]import`
+//    toggle objc         : `mulle-sde dependency mark mulle-mmap [no-]import`
 //    toggle public       : `mulle-sde dependency mark mulle-mmap [no-]public`
 //    toggle optional     : `mulle-sde dependency mark mulle-mmap [no-]require`
 //    remove for platform : `mulle-sde dependency mark mulle-mmap no-platform-<uname>`

@@ -1,4 +1,5 @@
 # mulle-mmapallocator Library Documentation for AI
+<!-- Keywords: mmap, allocator -->
 
 ## 1. Introduction & Purpose
 

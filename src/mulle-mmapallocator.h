@@ -3,6 +3,7 @@
 
 #include "include.h"
 
+#include <mulle-mmap/mulle-mmap.h>
 #include <stdint.h>
 
 /*
@@ -51,10 +52,11 @@ struct mulle_mmap_allocator
    MULLE_ALLOCATOR_BASE;
 
 //@private don't rely on these
-   void     *mspace;
-   void     *base;
-   size_t   capacity;
-   int      mode;
+   void                *mspace;
+   void                *base;
+   size_t              capacity;
+   int                 mode;
+   mulle_mmap_file_t   shared_handle;  // Handle for shared memory (Windows/Unix fd)
 };
 
 
@@ -63,8 +65,13 @@ struct mulle_mmap_allocator
 void   _mulle_mmap_allocator_init( struct mulle_mmap_allocator *p,
                                    size_t capacity,
                                    int mode);
+void   _mulle_mmap_allocator_attach( struct mulle_mmap_allocator *p,
+                                     mulle_mmap_file_t handle,
+                                     size_t capacity,
+                                     void *base_address);
 void   _mulle_mmap_allocator_reset( struct mulle_mmap_allocator *p);
 void   _mulle_mmap_allocator_done( struct mulle_mmap_allocator *p);
+void   _mulle_mmap_allocator_dump( struct mulle_mmap_allocator *p);
 
 
 
@@ -77,6 +84,18 @@ static inline void   mulle_mmap_allocator_init( struct mulle_mmap_allocator *p,
       return;
 
    _mulle_mmap_allocator_init( p, capacity, mode);
+}
+
+
+static inline void   mulle_mmap_allocator_attach( struct mulle_mmap_allocator *p,
+                                                   mulle_mmap_file_t handle,
+                                                   size_t capacity,
+                                                   void *base_address)
+{
+   if( ! p)
+      return;
+
+   _mulle_mmap_allocator_attach( p, handle, capacity, base_address);
 }
 
 
