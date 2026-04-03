@@ -6,8 +6,14 @@
 
 
 /*
- * This way we can keep dlmalloc effectively hidden
+ * This way we can keep dlmalloc effectively hidden.
+ * USE_SPIN_LOCKS: enables atomic spin locks in malloc_state, which live in
+ * shared memory and work across processes (atomics operate on physical addresses).
+ * INSECURE: disables magic/security checks that use per-process random values,
+ * which would fail when attaching to a shared mspace from another process.
  */
+#define USE_SPIN_LOCKS    1
+#define INSECURE          1
 #define DLMALLOC_EXPORT   static
 #include "mulle-dlmalloc/src/dlmalloc.c"
 
@@ -88,20 +94,25 @@ void   _mulle_mmap_allocator_init( struct mulle_mmap_allocator *p,
    // zero capacity may lead to mmap failing, and we need enough room for
    // mspace
    pagesize = mulle_mmap_get_system_pagesize();
-   n_pages  = (capacity / pagesize) + (capacity % pagesize) ? 1 : 0;
+   n_pages  = (capacity / pagesize) + ((capacity % pagesize) ? 1 : 0);
    if( n_pages == 0)
       n_pages = 1;
    capacity = n_pages * pagesize;
 
    if( mode & mulle_mmap_allocator_shared)
    {
-      base  = mulle_mmap_alloc_shared_pages( capacity);
+      struct mulle_mmap_shared_memory shared_mem;
+      
+      shared_mem = mulle_mmap_alloc_shared_memory( capacity);
+      base = shared_mem.address;
       if( ! base)
          (*p->fail)( mulle_mmap_allocator_as_allocator( p), base, capacity);
-      mode |= mulle_mmap_allocator_inflexible;
+      p->shared_handle = shared_mem.handle;
+      mode |= mulle_mmap_allocator_inflexible | mulle_mmap_allocator_locking;
    }
    else
    {
+      p->shared_handle = MULLE_MMAP_INVALID_HANDLE;
       if( mode & mulle_mmap_allocator_inflexible)
       {
          base = mulle_mmap_alloc_pages( capacity);
@@ -122,15 +133,52 @@ void   _mulle_mmap_allocator_init( struct mulle_mmap_allocator *p,
 }
 
 
-void   _mulle_mmap_allocator_done( struct mulle_mmap_allocator *p)
+void   _mulle_mmap_allocator_attach( struct mulle_mmap_allocator *p,
+                                     mulle_mmap_file_t handle,
+                                     size_t capacity,
+                                     void *base_address)
 {
+   void   *base;
+
+   __mulle_mmap_allocator_init( p);
+   ensure_initialization();
+
+   base = mulle_mmap_map_shared_memory( handle, capacity, base_address);
+   if( ! base)
+      (*p->fail)( mulle_mmap_allocator_as_allocator( p), base, capacity);
+
+   // mspace is NOT at base - dlmalloc places a chunk header before malloc_state.
+   // Replicate create_mspace_with_base's layout: mstate = chunk2mem(align_as_chunk(base))
+   __mulle_mmap_allocator_set_mspace( p,
+                                      chunk2mem( align_as_chunk( base)),
+                                      base,
+                                      capacity,
+                                      mulle_mmap_allocator_shared
+                                         | mulle_mmap_allocator_inflexible
+                                         | mulle_mmap_allocator_dont_free);
+   p->shared_handle = handle;
+}
+
+
+void   _mulle_mmap_allocator_done( struct mulle_mmap_allocator *p){
    _mulle_allocator_invalidate( (struct mulle_allocator *) p);
 
    destroy_mspace( p->mspace);
    p->mspace = NULL;
 
    if( p->base && ! (p->mode & mulle_mmap_allocator_dont_free))
-      mulle_mmap_free_pages( p->base, p->capacity);
+   {
+      if( p->mode & mulle_mmap_allocator_shared)
+      {
+         struct mulle_mmap_shared_memory shared_mem;
+         shared_mem.address = p->base;
+         shared_mem.size = p->capacity;
+         shared_mem.handle = p->shared_handle;
+         mulle_mmap_free_shared_memory( &shared_mem);
+      }
+      else
+         mulle_mmap_free_pages( p->base, p->capacity);
+   }
 }
 
 
@@ -147,6 +195,88 @@ void   _mulle_mmap_allocator_reset( struct mulle_mmap_allocator *p)
                                            p->capacity,
                                            p->mode & (mulle_mmap_allocator_inflexible|mulle_mmap_allocator_locking));
 }
+
+/*
+ * Dump the full mspace state to stderr for debugging.
+ * Walks all chunks in the shared region and hex-dumps the first 32 bytes
+ * of each allocated chunk.
+ */
+void   _mulle_mmap_allocator_dump( struct mulle_mmap_allocator *p)
+{
+   mstate      ms;
+   mchunkptr   q;
+   mchunkptr   top;
+   size_t      chunksize_val;
+   size_t      i;
+   size_t      n;
+   unsigned char *bytes;
+
+   if( ! p || ! p->mspace || ! p->base)
+   {
+      fprintf( stderr, "dump: allocator not initialized\n");
+      return;
+   }
+
+   ms  = (mstate) p->mspace;
+   top = ms->top;
+
+   fprintf( stderr, "=== mulle_mmap_allocator dump ===\n");
+   fprintf( stderr, "  base=%p  capacity=%zu  mspace=%p\n",
+            p->base, p->capacity, p->mspace);
+   fprintf( stderr, "  mstate fields:\n");
+   fprintf( stderr, "    smallmap=0x%x  treemap=0x%x\n", ms->smallmap, ms->treemap);
+   fprintf( stderr, "    dvsize=%zu  topsize=%zu\n",     ms->dvsize,   ms->topsize);
+   fprintf( stderr, "    dv=%p  top=%p\n",               (void *) ms->dv, (void *) ms->top);
+   fprintf( stderr, "    least_addr=%p\n",               (void *) ms->least_addr);
+   fprintf( stderr, "    footprint=%zu  max_footprint=%zu  footprint_limit=%zu\n",
+            ms->footprint, ms->max_footprint, ms->footprint_limit);
+   fprintf( stderr, "    mflags=0x%x  magic=0x%zx\n",   ms->mflags, ms->magic);
+#if USE_LOCKS
+   fprintf( stderr, "    mutex=%d\n",                    ms->mutex);
+#endif
+   fprintf( stderr, "    seg.base=%p  seg.size=%zu  seg.sflags=0x%x\n",
+            (void *) ms->seg.base, ms->seg.size, ms->seg.sflags);
+
+   fprintf( stderr, "  chunks (walking from mstate end):\n");
+
+   // first chunk starts right after the malloc_state header
+   q = (mchunkptr)((char *) ms + pad_request( sizeof( struct malloc_state)));
+
+   while( q && q < top)
+   {
+      chunksize_val = chunksize( q);
+      if( chunksize_val == 0)
+      {
+         fprintf( stderr, "    [%p] chunksize=0, stopping walk\n", (void *) q);
+         break;
+      }
+
+      if( cinuse( q))
+      {
+         bytes = (unsigned char *) chunk2mem( q);
+         n     = chunksize_val - overhead_for( q);
+         if( n > 32) n = 32;
+         fprintf( stderr, "    [%p] INUSE  size=%zu  data=",
+                  (void *) q, chunksize_val - overhead_for( q));
+         for( i = 0; i < n; i++)
+            fprintf( stderr, "%02x ", bytes[i]);
+         fprintf( stderr, "\n");
+      }
+      else
+      {
+         fprintf( stderr, "    [%p] FREE   size=%zu\n",
+                  (void *) q, chunksize_val);
+      }
+
+      q = (mchunkptr)((char *) q + chunksize_val);
+   }
+
+   if( top)
+      fprintf( stderr, "    [%p] TOP    size=%zu\n", (void *) top, ms->topsize);
+
+   fprintf( stderr, "=================================\n");
+}
+
 
 /*
  * extension : mulle-sde/c-demo

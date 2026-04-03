@@ -1,5 +1,5 @@
-#ifndef mulle_mmapallocator_include_h__
-#define mulle_mmapallocator_include_h__
+#ifndef mulle__mmapallocator_include_h__
+#define mulle__mmapallocator_include_h__
 
 /* DO:    #include this files in public headers.
 
@@ -25,21 +25,34 @@
 
 #include "_mulle-mmapallocator-include.h"
 
-// mulle-c11::feature...
-// #ifdef MULLE__MMAPALLOCATOR_BUILD
-// # define MULLE_MMAPALLOCATOR_EXTERN_GLOBAL  MULLE_C_GLOBAL
-// #else
-// # define MULLE_MMAPALLOCATOR_EXTERN_GLOBAL  MULLE_C_EXTERN_GLOBAL
-// #endif
-
+// this is for WIN32: specify global non-inlined functions and variables
+// like this (can not be declared inside functions!)
+//
+// .h:
+// #include "include.h"
+// MULLE__MMAPALLOCATOR_GLOBAL char *   aGlobalString;
+// MULLE__MMAPALLOCATOR_GLOBAL void     aGlobalFunction( void);
+//
+// .c:
+// #include "include-private.h"
+// MULLE__MMAPALLOCATOR_GLOBAL_VAR
+// char *  aGlobalString = "VfL Bochum 1848";
+// MULLE__MMAPALLOCATOR_GLOBAL
+// void   aGlobalFunction( void) {}
+//
+#ifndef MULLE__MMAPALLOCATOR_GLOBAL
+# ifdef MULLE__MMAPALLOCATOR_BUILD
+#  define MULLE__MMAPALLOCATOR_GLOBAL       MULLE_C_GLOBAL
+#  define MULLE__MMAPALLOCATOR_GLOBAL_VAR   MULLE_C_GLOBAL
+# else
+#  if defined( MULLE__MMAPALLOCATOR_INCLUDE_DYNAMIC) || (defined( MULLE_INCLUDE_DYNAMIC) && ! defined( MULLE__MMAPALLOCATOR_INCLUDE_STATIC))
+#   define MULLE__MMAPALLOCATOR_GLOBAL      MULLE_C_GLOBAL
+#  else
+#   define MULLE__MMAPALLOCATOR_GLOBAL      extern
+#  endif
+# endif
+# define MULLE__MMAPALLOCATOR_GLOBAL_VAR    MULLE_C_GLOBAL
+#endif
 /* You can add some more include statements here */
 
 #endif
-
-
-/*
- * extension : mulle-sde/c
- * directory : project-oneshot/all
- * template  : .../include.h
- * Suppress this comment with `export MULLE_SDE_GENERATE_FILE_COMMENTS=NO`
- */

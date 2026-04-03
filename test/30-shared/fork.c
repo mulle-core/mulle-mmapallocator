@@ -1,9 +1,12 @@
+#ifndef _WIN32
+
+#include "include.h"
+
 #include <mulle-mmapallocator/mulle-mmapallocator.h>
 
 #include <stdio.h>
-
-#include <unistd.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 
@@ -14,28 +17,23 @@ struct shared_memory
 };
 
 
-int   main( int argc, char *argv[])
+int   main( void)
 {
    struct mulle_allocator        *allocator;
    struct mulle_mmap_allocator   mmap_allocator;
-   char                          *s;
-   int                           wstatus;
    struct shared_memory          *shmem;
+   int                           wstatus;
 
    mulle_mmap_allocator_init( &mmap_allocator, 8192, mulle_mmap_allocator_shared);
    allocator = mulle_mmap_allocator_as_allocator( &mmap_allocator);
 
-
    shmem = mulle_allocator_calloc( allocator, 1, sizeof( struct shared_memory));
 
-   // now fork a process and access the date
    if( ! fork())
    {
       shmem->s = mulle_allocator_strdup( allocator, "VfL Bochum 1848");
-
-      //mulle_mmap_allocator_done( &mmap_allocator);
       fprintf( stderr, "child is exiting\n");
-      exit( 0);
+      _exit( 0);
    }
 
    fprintf( stderr, "parent is waiting\n");
@@ -43,16 +41,17 @@ int   main( int argc, char *argv[])
 
    fprintf( stderr, "parent is reading shared memory\n");
 
-   printf( "%s\n",  shmem->s);
+   printf( "%s\n", shmem->s);
    mulle_mmap_allocator_done( &mmap_allocator);
 
    return( 0);
 }
 
+#else
 
-/*
- * extension : mulle-sde/c-test-library-demo
- * directory : demo/all
- * template  : .../hello.c
- * Suppress this comment with `export MULLE_SDE_GENERATE_FILE_COMMENTS=NO`
- */
+int   main( void)
+{
+   return( 0);
+}
+
+#endif /* _WIN32 */

@@ -16,11 +16,3 @@ If you do not want any files reflected, turn reflection off with:
 mulle-sde environment set MULLE_SOURCETREE_TO_CMAKE_RUN NO
 mulle-sde environment set MULLE_MATCH_TO_CMAKE_RUN NO
 ```
-
-
-<!--
-extension : mulle-sde/c-cmake
-directory : project-oneshot/all
-template  : .../README.md
-Suppress this comment with `export MULLE_SDE_GENERATE_FILE_COMMENTS=NO`
--->
