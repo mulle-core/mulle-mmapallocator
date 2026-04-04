@@ -11,7 +11,7 @@
  *
  *  version:  major, minor, patch
  */
-#define MULLE__MMAPALLOCATOR_VERSION  ((0UL << 20) | (1 << 8) | 2)
+#define MULLE__MMAPALLOCATOR_VERSION  ((0UL << 20) | (2 << 8) | 0)
 
 
 static inline unsigned int   mulle_mmapallocator_get_version_major( void)
