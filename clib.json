@@ -1,17 +1,19 @@
 {
    "name" : "mulle-mmapallocator",
-   "version" : "0.1.2",
+   "version" : "0.2.0",
    "description" : "🌍 mulle-mmapallocator a mulle-allocator that shared memory",
    "keywords" : [],
    "license" : "BSD-3-Clause",
    "repo" : "mulle-core/mulle-mmapallocator",
    "src" : [
+      "asset/dox/TOC.md",
       "src/generic/include-private.h",
       "src/generic/include.h",
       "src/mulle-mmapallocator.c",
       "src/mulle-mmapallocator.h",
       "src/reflect/_mulle-mmapallocator-include-private.h",
       "src/reflect/_mulle-mmapallocator-include.h",
+      "src/reflect/_mulle-mmapallocator-provide.h",
       "src/reflect/_mulle-mmapallocator-versioncheck.h"
    ],
    "dependencies" : {
