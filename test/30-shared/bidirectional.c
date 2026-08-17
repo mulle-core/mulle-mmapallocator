@@ -44,13 +44,11 @@ int   main( int argc, char *argv[])
    _mulle__pointerfifo32_init( &shmem->child_parent);
    _mulle__pointerfifo32_init( &shmem->parent_child);
 
-   i = 0;
-
    if( ! fork())
    {
       fprintf( stderr, "child is reading and writing shared memory\n");
 
-      for(; i < 32;)
+      for( i = 0; i < 32;)
       {
          s = _mulle__pointerfifo32_read( &shmem->parent_child);
          if( ! s)
@@ -68,29 +66,37 @@ int   main( int argc, char *argv[])
       }
 
       fprintf( stderr, "child is exiting\n");
-      exit( 0);
+      _exit( 0);
    }
 
    fprintf( stderr, "parent is reading and writing shared memory\n");
 
-   s = NULL;
-   for(; i < 32;)
+   //
+   // Ping-pong: send one message, then wait for reply before sending next.
+   // This avoids filling the FIFO (capacity 32) and losing messages, since
+   // _mulle__pointerfifo32_write silently fails when full.
+   //
+   for( i = 0; i < 32;)
    {
-      mulle_allocator_asprintf( allocator, &s2, "p->c %d", i++);
+      mulle_allocator_asprintf( allocator, &s2, "p->c %d", i);
 
       fprintf( stderr, "parent sends %s\n", s2);
       _mulle__pointerfifo32_write( &shmem->parent_child, s2);
 
-      if( s)
+      // wait for child's reply
+      for(;;)
       {
-         fprintf( stderr, "parent frees %s\n", s);
-         mulle_allocator_free( allocator, s);
+         s = _mulle__pointerfifo32_read( &shmem->child_parent);
+         if( s)
+            break;
       }
-      s = _mulle__pointerfifo32_read( &shmem->child_parent);
-      if( ! s)
-         continue;
       fprintf( stderr, "parent received %s\n", s);
+      fprintf( stderr, "parent frees %s\n", s);
+      mulle_allocator_free( allocator, s);
+      i++;
    }
+
+   waitpid( -1, &wstatus, 0);
 
    mulle_mmap_allocator_done( &mmap_allocator);
 
@@ -174,23 +180,24 @@ int   main( int argc, char *argv[])
       fprintf( stderr, "parent is reading and writing shared memory\n");
 
       i = 0;
-      s = NULL;
       for(; i < 32;)
       {
-         mulle_allocator_asprintf( allocator, &s2, "p->c %d", i++);
+         mulle_allocator_asprintf( allocator, &s2, "p->c %d", i);
 
          fprintf( stderr, "parent sends %s\n", s2);
          _mulle__pointerfifo32_write( &shmem->parent_child, s2);
 
-         if( s)
+         // wait for child's reply
+         for(;;)
          {
-            fprintf( stderr, "parent frees %s\n", s);
-            mulle_allocator_free( allocator, s);
+            s = _mulle__pointerfifo32_read( &shmem->child_parent);
+            if( s)
+               break;
          }
-         s = _mulle__pointerfifo32_read( &shmem->child_parent);
-         if( ! s)
-            continue;
          fprintf( stderr, "parent received %s\n", s);
+         fprintf( stderr, "parent frees %s\n", s);
+         mulle_allocator_free( allocator, s);
+         i++;
       }
 
       WaitForSingleObject( pi.hProcess, INFINITE);
