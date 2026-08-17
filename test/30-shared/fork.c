@@ -39,6 +39,13 @@ int   main( void)
    fprintf( stderr, "parent is waiting\n");
    wait( &wstatus);
 
+   if( ! WIFEXITED( wstatus) || WEXITSTATUS( wstatus) != 0)
+   {
+      fprintf( stderr, "child failed (status %d)\n", wstatus);
+      mulle_mmap_allocator_done( &mmap_allocator);
+      return( 1);
+   }
+
    fprintf( stderr, "parent is reading shared memory\n");
 
    printf( "%s\n", shmem->s);

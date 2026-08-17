@@ -63,7 +63,7 @@ static void   __mulle_mmap_allocator_init( struct mulle_mmap_allocator *p)
 
 
 static void   __mulle_mmap_allocator_set_mspace( struct mulle_mmap_allocator *p,
-                                                 mspace *m,
+                                                 void *m,
                                                  void *base,
                                                  size_t capacity,
                                                  int mode)
@@ -82,7 +82,7 @@ void   _mulle_mmap_allocator_init( struct mulle_mmap_allocator *p,
                                    size_t capacity,
                                    int mode)
 {
-   mspace  *mspace;
+   mspace   mspace;
    void    *base;
    size_t   pagesize;
    size_t   n_pages;
@@ -138,7 +138,8 @@ void   _mulle_mmap_allocator_attach( struct mulle_mmap_allocator *p,
                                      size_t capacity,
                                      void *base_address)
 {
-   void   *base;
+   void    *base;
+   mstate   ms;
 
    __mulle_mmap_allocator_init( p);
    ensure_initialization();
@@ -149,8 +150,16 @@ void   _mulle_mmap_allocator_attach( struct mulle_mmap_allocator *p,
 
    // mspace is NOT at base - dlmalloc places a chunk header before malloc_state.
    // Replicate create_mspace_with_base's layout: mstate = chunk2mem(align_as_chunk(base))
+   ms = (mstate) chunk2mem( align_as_chunk( base));
+
+   // Validate that the mapped region contains a valid mspace created by the
+   // parent. seg.base must match our mapping address (catches ASLR mismatch
+   // or stale/zeroed memory) and seg.size must match expected capacity.
+   if( ms->seg.base != (char *) base || ms->seg.size != capacity)
+      (*p->fail)( mulle_mmap_allocator_as_allocator( p), base, capacity);
+
    __mulle_mmap_allocator_set_mspace( p,
-                                      chunk2mem( align_as_chunk( base)),
+                                      ms,
                                       base,
                                       capacity,
                                       mulle_mmap_allocator_shared
@@ -194,6 +203,9 @@ void   _mulle_mmap_allocator_reset( struct mulle_mmap_allocator *p)
       p->mspace = create_mspace_with_base( p->base,
                                            p->capacity,
                                            p->mode & (mulle_mmap_allocator_inflexible|mulle_mmap_allocator_locking));
+
+   if( ! p->mspace)
+      (*p->fail)( mulle_mmap_allocator_as_allocator( p), p->base, p->capacity);
 }
 
 /*

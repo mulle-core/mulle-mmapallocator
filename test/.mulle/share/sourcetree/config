@@ -1,1 +1,1 @@
-mulle-mmapallocator;${MULLE__MMAPALLOCATOR_NODETYPE:-tar};;8B33C49E-A3A9-4F60-9522-76A184B1CC4D;${MULLE__MMAPALLOCATOR_URL:-https://github.com/mulle-kybernetik-tv/mulle-mmapallocator/archive/${MULLE_TAG}.tar.gz};${MULLE__MMAPALLOCATOR_BRANCH};${MULLE__MMAPALLOCATOR_TAG:-latest};;
+mulle-mmapallocator;${MULLE__MMAPALLOCATOR_NODETYPE:-tar};;9CD5903D-5D91-408B-AC75-B5DF6ECA6CD2;${MULLE__MMAPALLOCATOR_URL:-https://github.com/nat/mulle-mmapallocator/archive/${MULLE_TAG}.tar.gz};${MULLE__MMAPALLOCATOR_BRANCH};${MULLE__MMAPALLOCATOR_TAG:-latest};;
