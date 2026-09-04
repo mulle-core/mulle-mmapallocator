@@ -8,7 +8,7 @@
       repo="mulle-mmapallocator";
       homepage="https://github.com/mulle-core/mulle-mmapallocator";
       license="BSD-3-Clause";
-       version="0.2.1";
+       version="0.2.2";
    };
    dependencies =
    (
