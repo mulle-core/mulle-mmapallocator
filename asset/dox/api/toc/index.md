@@ -30,11 +30,14 @@
 
 - Lifecycle Functions:
   - _mulle_mmap_allocator_init(struct mulle_mmap_allocator *p, size_t capacity, int mode)
-    - Initialize a new allocator with the requested capacity and mode. Capacity may be 0 to let implementation pick defaults.
+    - Initialize a new allocator with the requested capacity and mode. Capacity may be 0 to let implementation pick defaults (it is rounded up to a whole number of pages, minimum one page).
+    - If mode includes `mulle_mmap_allocator_shared`, the implementation allocates shared memory and forces the `mulle_mmap_allocator_inflexible | mulle_mmap_allocator_locking` bits on top of the requested mode.
+    - Calls the fail callback (via `p->fail`) if the shared memory allocation or the mspace creation fails.
   - _mulle_mmap_allocator_attach(struct mulle_mmap_allocator *p, mulle_mmap_file_t handle, size_t capacity, void *base_address)
-    - Attach allocator object to an existing mmap handle and base address (for shared use across processes).
+    - Attach allocator object to an existing mmap handle and base address (for shared use across processes). Forces mode to `mulle_mmap_allocator_shared | mulle_mmap_allocator_inflexible | mulle_mmap_allocator_dont_free`, so `_done` will not free the underlying mapping.
+    - Validates that the mapped region holds a mspace created by the owner: the dlmalloc `seg.base` must equal `base_address` and `seg.size` must equal `capacity`. On mismatch (e.g. ASLR shift, stale or zeroed memory) it invokes the fail callback instead of silently attaching. The mspace is NOT at `base` (a dlmalloc chunk header precedes the malloc_state), so this is replicated via `chunk2mem( align_as_chunk( base))`.
   - _mulle_mmap_allocator_reset(struct mulle_mmap_allocator *p)
-    - Reset the allocator internal state (makes it reusable).
+    - Reset the allocator internal state (makes it reusable). Destroys the current mspace and re-creates it; calls the fail callback if the new mspace creation fails.
   - _mulle_mmap_allocator_done(struct mulle_mmap_allocator *p)
     - Tear down the allocator and release/close the mapped region according to mode bits.
   - _mulle_mmap_allocator_dump(struct mulle_mmap_allocator *p)
@@ -49,7 +52,7 @@
   - mulle_allocator_as_mmap_allocator(...) — reverse cast helper
 
 - Version helpers:
-  - MULLE__MMAPALLOCATOR_VERSION constant and inline getters:
+  - `MULLE__MMAPALLOCATOR_VERSION` constant (current development version 0.2.2) and inline getters:
     - mulle_mmapallocator_get_version_major/minor/patch()
   - uint32_t mulle_mmapallocator_get_version(void) — exported symbol for C11 globals support.
 
@@ -67,7 +70,7 @@
 - Growth: if not inflexible, allocator may grow underlying mapping; growth behavior depends on platform and initial capacity.
 - Memory overhead: capacity requested will be slightly larger than usable space; README notes ~2KB reserved overhead.
 - Trade-offs: shared mode imposes platform-level constraints (handles, alignment). "inflexible" reduces complexity at cost of fixed capacity.
-- Thread-safety: locking is optional. By default, locking may be off — enable mulle_mmap_allocator_locking to get internal synchronization. If not enabled, require external synchronization.
+- Thread-safety: locking is optional. By default, locking may be off — enable mulle_mmap_allocator_locking to get internal synchronization. If not enabled, require external synchronization. In shared mode this project compiles dlmalloc with `USE_SPIN_LOCKS` (atomic spin locks that operate on physical addresses, valid across processes) and `INSECURE` (disables per-process random magic checks that would fail when attaching from another process), so `_init`/`_attach` force the locking bit on.
 
 ## 5. AI Usage Recommendations & Patterns
 
@@ -78,7 +81,8 @@
 - Common pitfalls:
   - Do not access private fields (mspace, base) directly — they are implementation detail and may change.
   - Be aware that capacity available to user allocations is ~2KB less than ordered — account for this when sizing.
-  - If using shared mappings, ensure all processes agree on the base address and handle semantics.
+  - If using shared mappings, ensure all processes agree on the base address and handle semantics. `_mulle_mmap_allocator_attach` validates the mspace (`seg.base`/`seg.size`) and invokes the fail callback on mismatch — an ASLR-shifted or stale mapping will fail loudly, not silently. The fail callback defaults to `mulle_allocation_fail`.
+  - After `_attach`, mode is forced to `shared | inflexible | dont_free`: `_done` will NOT munmap/unlink the shared mapping for that instance.
 - Idiomatic usage:
   - Initialize a stack-allocated struct mulle_mmap_allocator, then cast to mulle_allocator* for allocator APIs. Call done() when finished to reclaim the region.
 
@@ -146,7 +150,7 @@ int   main( int argc, char *argv[])
 
 ## 8. Shortcut
 
-- If an existing TOC.md exists, compare differences since the last commit to update only delta. (Not applicable here; this file is generated from headers and tests.)
+- Updated against changes since the last commit of this file (4cdf10e, 2026-08-04): mspace validation + fail callback in attach/reset/init (8dc26b6) and version bump to 0.2.2 (e3c3011).
 
 
 <!-- End of TOC.md for mulle-mmapallocator -->
