@@ -2,18 +2,24 @@
 
 #include "mulle-mmapallocator.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 
 
 /*
- * This way we can keep dlmalloc effectively hidden.
- * USE_SPIN_LOCKS: enables atomic spin locks in malloc_state, which live in
- * shared memory and work across processes (atomics operate on physical addresses).
- * INSECURE: disables magic/security checks that use per-process random values,
- * which would fail when attaching to a shared mspace from another process.
+ * The allocator behind this is mulle-dlmalloc's relocatable offset arena. It
+ * keeps all allocator metadata in shared memory as arena-relative offsets, so
+ * the region may be mapped at a different address in every process.
+ *
+ * The generic mulle_allocator interface still passes around process-local
+ * void * values. A pointer is converted to its arena offset by subtracting the
+ * local base and back again by adding it. Persistent references that user code
+ * stores in shared payloads are still raw pointers, so callers must attach at
+ * the creator's address (base_address) unless their payloads store offsets.
+ *
+ * DLMALLOC_EXPORT static hides the offset allocator symbols, exactly as it did
+ * for dlmalloc before.
  */
-#define USE_SPIN_LOCKS    1
-#define INSECURE          1
 #define DLMALLOC_EXPORT   static
 #include "mulle-dlmalloc/src/dlmalloc.c"
 
@@ -27,51 +33,90 @@ uint32_t   mulle_mmapallocator_get_version( void)
 }
 
 
-static void   *mmap_realloc( void *q, size_t size, struct mulle_allocator *allocator)
+/* Build a process-local view from the stored region. */
+static dlmalloc_offset_view   mulle_mmap_allocator_view( struct mulle_mmap_allocator *p)
 {
-   struct mulle_mmap_allocator *m = (struct mulle_mmap_allocator *) allocator;
+   dlmalloc_offset_view   view;
 
-   return( mspace_realloc( m->mspace, q, size));
+   view.base     = p->base;
+   view.capacity = p->capacity;
+   return( view);
+}
+
+
+/* Arena offset of a payload pointer handed out by this allocator. */
+static dlmalloc_offset_t   mulle_mmap_allocator_offset( struct mulle_mmap_allocator *p,
+                                                        void *q)
+{
+   return( (dlmalloc_offset_t)((char *) q - (char *) p->base));
+}
+
+
+static void   *mmap_reallocarray( void *q, size_t n, size_t el_size, struct mulle_allocator *allocator)
+{
+   struct mulle_mmap_allocator   *m;
+   dlmalloc_offset_view          view;
+   dlmalloc_offset_t             offset;
+   size_t                        size;
+
+   if( MULLE_C_UNLIKELY( ! n || ! el_size))
+      _mulle_allocator_abort( allocator, q, 0);
+
+   m      = (struct mulle_mmap_allocator *) allocator;
+   size   = mulle_allocator_size_multiply( allocator, n, el_size);
+   view   = mulle_mmap_allocator_view( m);
+   offset = q ? mulle_mmap_allocator_offset( m, q) : 0;
+   offset = dlmalloc_offset_realloc( &view, offset, size);
+   return( offset ? (char *) m->base + offset : NULL);
 }
 
 
 static void   *mmap_calloc( size_t n, size_t size, struct mulle_allocator *allocator)
 {
-   struct mulle_mmap_allocator *m = (struct mulle_mmap_allocator *) allocator;
+   struct mulle_mmap_allocator   *m;
+   dlmalloc_offset_view          view;
+   dlmalloc_offset_t             offset;
 
-   return( mspace_calloc( m->mspace, n, size));
+   m      = (struct mulle_mmap_allocator *) allocator;
+   view   = mulle_mmap_allocator_view( m);
+   offset = dlmalloc_offset_calloc( &view, n, size);
+   return( offset ? (char *) m->base + offset : NULL);
 }
 
 
 static void   mmap_free( void *p, struct mulle_allocator *allocator)
 {
-   struct mulle_mmap_allocator *m = (struct mulle_mmap_allocator *) allocator;
+   struct mulle_mmap_allocator   *m;
+   dlmalloc_offset_view          view;
 
-   mspace_free( m->mspace, p);
+   if( ! p)
+      return;
+
+   m    = (struct mulle_mmap_allocator *) allocator;
+   view = mulle_mmap_allocator_view( m);
+   dlmalloc_offset_free( &view, mulle_mmap_allocator_offset( m, p));
 }
 
 
 static void   __mulle_mmap_allocator_init( struct mulle_mmap_allocator *p)
 {
-   p->calloc   = mmap_calloc;
-   p->realloc  = mmap_realloc;
-   p->free     = mmap_free;
-   p->fail     = mulle_allocation_fail,
-   p->abafree  = mulle_allocator_no_aba_abort,
-   p->aba      = 0;
+   p->calloc       = mmap_calloc;
+   p->reallocarray = mmap_reallocarray;
+   p->free         = mmap_free;
+   p->fail         = mulle_allocation_fail,
+   p->abafree      = mulle_allocator_no_aba_abort,
+   p->aba          = 0;
 }
 
 
-static void   __mulle_mmap_allocator_set_mspace( struct mulle_mmap_allocator *p,
-                                                 void *m,
+static void   __mulle_mmap_allocator_set_region( struct mulle_mmap_allocator *p,
                                                  void *base,
                                                  size_t capacity,
                                                  int mode)
 {
    assert( p);
-   assert( m);
+   assert( base);
 
-   p->mspace   = m;
    p->base     = base;
    p->capacity = capacity;
    p->mode     = mode;
@@ -82,17 +127,19 @@ void   _mulle_mmap_allocator_init( struct mulle_mmap_allocator *p,
                                    size_t capacity,
                                    int mode)
 {
-   mspace   mspace;
-   void    *base;
-   size_t   pagesize;
-   size_t   n_pages;
+   dlmalloc_offset_view          view;
+   mulle_mmap_file_t             shared_handle;
+   void                          *base;
+   size_t                        pagesize;
+   size_t                        n_pages;
 
-   base = NULL;
+   base          = NULL;
+   shared_handle = MULLE_MMAP_INVALID_HANDLE;
 
    __mulle_mmap_allocator_init( p);
 
    // zero capacity may lead to mmap failing, and we need enough room for
-   // mspace
+   // the arena header
    pagesize = mulle_mmap_get_system_pagesize();
    n_pages  = (capacity / pagesize) + ((capacity % pagesize) ? 1 : 0);
    if( n_pages == 0)
@@ -101,35 +148,30 @@ void   _mulle_mmap_allocator_init( struct mulle_mmap_allocator *p,
 
    if( mode & mulle_mmap_allocator_shared)
    {
-      struct mulle_mmap_shared_memory shared_mem;
-      
+      struct mulle_mmap_shared_memory   shared_mem;
+
       shared_mem = mulle_mmap_alloc_shared_memory( capacity);
       base = shared_mem.address;
       if( ! base)
          (*p->fail)( mulle_mmap_allocator_as_allocator( p), base, capacity);
-      p->shared_handle = shared_mem.handle;
+      shared_handle = shared_mem.handle;
       mode |= mulle_mmap_allocator_inflexible | mulle_mmap_allocator_locking;
    }
    else
    {
-      p->shared_handle = MULLE_MMAP_INVALID_HANDLE;
-      if( mode & mulle_mmap_allocator_inflexible)
-      {
-         base = mulle_mmap_alloc_pages( capacity);
-         if( ! base)
-            (*p->fail)( mulle_mmap_allocator_as_allocator( p), base, capacity);
-      }
+      // the offset arena is always a fixed region, so it needs its own memory
+      base = mulle_mmap_alloc_pages( capacity);
+      if( ! base)
+         (*p->fail)( mulle_mmap_allocator_as_allocator( p), base, capacity);
+      mode |= mulle_mmap_allocator_inflexible;
    }
 
-   if( ! base)
-      mspace = create_mspace( capacity, (mode & mulle_mmap_allocator_locking));
-   else
-      mspace = create_mspace_with_base( base, capacity, mode & (mulle_mmap_allocator_inflexible|mulle_mmap_allocator_locking));
-
-   if( ! mspace)
+   if( ! dlmalloc_offset_arena_init( base, capacity) ||
+       ! dlmalloc_offset_arena_attach( &view, base, capacity))
       (*p->fail)( mulle_mmap_allocator_as_allocator( p), base, capacity);
 
-   __mulle_mmap_allocator_set_mspace( p, mspace, base, capacity, mode);
+   __mulle_mmap_allocator_set_region( p, base, capacity, mode);
+   p->shared_handle = shared_handle;
 }
 
 
@@ -138,28 +180,22 @@ void   _mulle_mmap_allocator_attach( struct mulle_mmap_allocator *p,
                                      size_t capacity,
                                      void *base_address)
 {
-   void    *base;
-   mstate   ms;
+   dlmalloc_offset_view   view;
+   void                   *base;
 
    __mulle_mmap_allocator_init( p);
-   ensure_initialization();
 
    base = mulle_mmap_map_shared_memory( handle, capacity, base_address);
    if( ! base)
       (*p->fail)( mulle_mmap_allocator_as_allocator( p), base, capacity);
 
-   // mspace is NOT at base - dlmalloc places a chunk header before malloc_state.
-   // Replicate create_mspace_with_base's layout: mstate = chunk2mem(align_as_chunk(base))
-   ms = (mstate) chunk2mem( align_as_chunk( base));
-
-   // Validate that the mapped region contains a valid mspace created by the
-   // parent. seg.base must match our mapping address (catches ASLR mismatch
-   // or stale/zeroed memory) and seg.size must match expected capacity.
-   if( ms->seg.base != (char *) base || ms->seg.size != capacity)
+   // Never reinitialize shared data on attach. The offset arena validates the
+   // versioned header and walks the region once to reject a stale or corrupt
+   // one; it does not compare a persisted pointer against our mapping.
+   if( ! dlmalloc_offset_arena_attach( &view, base, capacity))
       (*p->fail)( mulle_mmap_allocator_as_allocator( p), base, capacity);
 
-   __mulle_mmap_allocator_set_mspace( p,
-                                      ms,
+   __mulle_mmap_allocator_set_region( p,
                                       base,
                                       capacity,
                                       mulle_mmap_allocator_shared
@@ -172,121 +208,97 @@ void   _mulle_mmap_allocator_attach( struct mulle_mmap_allocator *p,
 void   _mulle_mmap_allocator_done( struct mulle_mmap_allocator *p){
    _mulle_allocator_invalidate( (struct mulle_allocator *) p);
 
-   destroy_mspace( p->mspace);
-   p->mspace = NULL;
-
+   // There is nothing to destroy in the arena itself: it is plain shared
+   // memory. Only release the mapping when we own it.
    if( p->base && ! (p->mode & mulle_mmap_allocator_dont_free))
    {
       if( p->mode & mulle_mmap_allocator_shared)
       {
-         struct mulle_mmap_shared_memory shared_mem;
+         struct mulle_mmap_shared_memory   shared_mem;
+
          shared_mem.address = p->base;
-         shared_mem.size = p->capacity;
-         shared_mem.handle = p->shared_handle;
+         shared_mem.size    = p->capacity;
+         shared_mem.handle  = p->shared_handle;
          mulle_mmap_free_shared_memory( &shared_mem);
       }
       else
          mulle_mmap_free_pages( p->base, p->capacity);
    }
+
+   p->base     = NULL;
+   p->capacity = 0;
 }
 
 
 void   _mulle_mmap_allocator_reset( struct mulle_mmap_allocator *p)
 {
-   destroy_mspace( p->mspace);
+   dlmalloc_offset_view   view;
 
-   // if we used create_mspace_with_base, destroy_mspace will not have deleted
-   // out p->base so we can just reconfigure it
-   if( ! p->base)
-      p->mspace = create_mspace( p->capacity, (p->mode & mulle_mmap_allocator_locking));
-   else
-      p->mspace = create_mspace_with_base( p->base,
-                                           p->capacity,
-                                           p->mode & (mulle_mmap_allocator_inflexible|mulle_mmap_allocator_locking));
-
-   if( ! p->mspace)
+   // Rebuild the arena in place. This discards every existing allocation, so it
+   // requires exclusive access to the region.
+   if( ! p->base ||
+       ! dlmalloc_offset_arena_init( p->base, p->capacity) ||
+       ! dlmalloc_offset_arena_attach( &view, p->base, p->capacity))
       (*p->fail)( mulle_mmap_allocator_as_allocator( p), p->base, p->capacity);
 }
 
+
 /*
- * Dump the full mspace state to stderr for debugging.
- * Walks all chunks in the shared region and hex-dumps the first 32 bytes
- * of each allocated chunk.
+ * Dump the arena header and the block tiling to stderr for debugging. Blocks
+ * are printed in arena order; an in-use block reports the usable payload size,
+ * a free block its full block size.
  */
 void   _mulle_mmap_allocator_dump( struct mulle_mmap_allocator *p)
 {
-   mstate      ms;
-   mchunkptr   q;
-   mchunkptr   top;
-   size_t      chunksize_val;
-   size_t      i;
-   size_t      n;
-   unsigned char *bytes;
+   struct dlmalloc_offset_header   *header;
+   struct dlmalloc_offset_block    *block;
+   dlmalloc_offset_view            view;
+   uint64_t                        end;
+   uint64_t                        offset;
+   uint64_t                        size;
 
-   if( ! p || ! p->mspace || ! p->base)
+   if( ! p || ! p->base)
    {
       fprintf( stderr, "dump: allocator not initialized\n");
       return;
    }
 
-   ms  = (mstate) p->mspace;
-   top = ms->top;
+   view = mulle_mmap_allocator_view( p);
+   if( ! dlmalloc_offset_lock( &view))
+      return;
+
+   header = dlmalloc_offset_header_for( &view);
+   end    = header->blocks_offset + header->blocks_size;
 
    fprintf( stderr, "=== mulle_mmap_allocator dump ===\n");
-   fprintf( stderr, "  base=%p  capacity=%zu  mspace=%p\n",
-            p->base, p->capacity, p->mspace);
-   fprintf( stderr, "  mstate fields:\n");
-   fprintf( stderr, "    smallmap=0x%x  treemap=0x%x\n", ms->smallmap, ms->treemap);
-   fprintf( stderr, "    dvsize=%zu  topsize=%zu\n",     ms->dvsize,   ms->topsize);
-   fprintf( stderr, "    dv=%p  top=%p\n",               (void *) ms->dv, (void *) ms->top);
-   fprintf( stderr, "    least_addr=%p\n",               (void *) ms->least_addr);
-   fprintf( stderr, "    footprint=%zu  max_footprint=%zu  footprint_limit=%zu\n",
-            ms->footprint, ms->max_footprint, ms->footprint_limit);
-   fprintf( stderr, "    mflags=0x%x  magic=0x%zx\n",   ms->mflags, ms->magic);
-#if USE_LOCKS
-   fprintf( stderr, "    mutex=%d\n",                    ms->mutex);
-#endif
-   fprintf( stderr, "    seg.base=%p  seg.size=%zu  seg.sflags=0x%x\n",
-            (void *) ms->seg.base, ms->seg.size, ms->seg.sflags);
+   fprintf( stderr, "  base=%p  capacity=%zu\n", p->base, p->capacity);
+   fprintf( stderr, "  magic=%#llx  version=%u  configuration=%#llx\n",
+            (unsigned long long) header->magic,
+            (unsigned) header->version,
+            (unsigned long long) header->configuration);
+   fprintf( stderr, "  blocks offset=%llu  size=%llu\n",
+            (unsigned long long) header->blocks_offset,
+            (unsigned long long) header->blocks_size);
+   fprintf( stderr, "  blocks (walking the tiling):\n");
 
-   fprintf( stderr, "  chunks (walking from mstate end):\n");
-
-   // first chunk starts right after the malloc_state header
-   q = (mchunkptr)((char *) ms + pad_request( sizeof( struct malloc_state)));
-
-   while( q && q < top)
+   offset = header->blocks_offset;
+   while( offset < end)
    {
-      chunksize_val = chunksize( q);
-      if( chunksize_val == 0)
-      {
-         fprintf( stderr, "    [%p] chunksize=0, stopping walk\n", (void *) q);
-         break;
-      }
-
-      if( cinuse( q))
-      {
-         bytes = (unsigned char *) chunk2mem( q);
-         n     = chunksize_val - overhead_for( q);
-         if( n > 32) n = 32;
-         fprintf( stderr, "    [%p] INUSE  size=%zu  data=",
-                  (void *) q, chunksize_val - overhead_for( q));
-         for( i = 0; i < n; i++)
-            fprintf( stderr, "%02x ", bytes[i]);
-         fprintf( stderr, "\n");
-      }
+      block = dlmalloc_offset_block_at( &view, offset);
+      size  = dlmalloc_offset_block_size( block);
+      if( dlmalloc_offset_block_inuse( block))
+         fprintf( stderr, "    [%llu] INUSE  size=%llu\n",
+                  (unsigned long long) offset,
+                  (unsigned long long)(size - DLMALLOC_OFFSET_BLOCK_SIZE));
       else
-      {
-         fprintf( stderr, "    [%p] FREE   size=%zu\n",
-                  (void *) q, chunksize_val);
-      }
-
-      q = (mchunkptr)((char *) q + chunksize_val);
+         fprintf( stderr, "    [%llu] FREE   size=%llu\n",
+                  (unsigned long long) offset,
+                  (unsigned long long) size);
+      offset += size;
    }
 
-   if( top)
-      fprintf( stderr, "    [%p] TOP    size=%zu\n", (void *) top, ms->topsize);
-
    fprintf( stderr, "=================================\n");
+   dlmalloc_offset_unlock( &view);
 }
 
 

@@ -32,7 +32,7 @@
    embedded =
    (
       {
-         description="Doug Lea's malloc.c extended for shared memory use.";
+         description="A relocatable allocator for one shared-memory arena.";
          domain="github";
          name="src/mulle-dlmalloc";
          repo="mulle-dlmalloc";

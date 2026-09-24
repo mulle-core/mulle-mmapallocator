@@ -6,6 +6,14 @@ mulle-mmapallocator can be used to create memory allocations shared across
 process boundaries. Due to cross-platform considerations, the memory to be
 shared with the other processes must be pre-allocated at initialization time.
 
+Internally it uses mulle-dlmalloc's relocatable offset arena: allocator metadata
+is stored as arena-relative offsets, so the region can be mapped anywhere. A
+payload that stores raw pointers still requires every process to attach at the
+same address; a payload that stores offsets can attach anywhere.
+
+Every mode uses one fixed-capacity arena. There is no growth, so size the region
+for the worst case up front.
+
 mulle-mmapallocator can also be used to create a separate allocation
 space, which can then easily be reclaimed by destroying the allocator.
 

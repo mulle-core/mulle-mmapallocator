@@ -52,7 +52,6 @@ struct mulle_mmap_allocator
    MULLE_ALLOCATOR_BASE;
 
 //@private don't rely on these
-   void                *mspace;
    void                *base;
    size_t              capacity;
    int                 mode;
@@ -65,6 +64,12 @@ struct mulle_mmap_allocator
 void   _mulle_mmap_allocator_init( struct mulle_mmap_allocator *p,
                                    size_t capacity,
                                    int mode);
+// Attach to shared memory created by another process. The implementation keeps
+// all allocator metadata as arena-relative offsets, so the region can be mapped
+// anywhere. base_address is passed through as the mapping hint: supply the
+// creator's address to keep raw pointers stored in shared payloads valid, or
+// NULL to map anywhere when only offsets are shared. Attach validates the
+// versioned arena header and never reinitializes shared data.
 void   _mulle_mmap_allocator_attach( struct mulle_mmap_allocator *p,
                                      mulle_mmap_file_t handle,
                                      size_t capacity,

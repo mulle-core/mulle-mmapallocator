@@ -45,13 +45,6 @@ endif()
 include( Library)
 
 
-target_compile_definitions( "${LIBRARY_COMPILE_TARGET}"
-PUBLIC
-   MSPACES
-   ONLY_MSPACES      # will set HAVE_MORECORE to 0, which means mmap is used
-   NO_MALLINFO
-)
-
 target_compile_options( "${LIBRARY_COMPILE_TARGET}"
 PUBLIC
    -Wall
@@ -61,8 +54,8 @@ PUBLIC
 include( InstallLibrary)
 
 if( LINK_PHASE)
-   include( InstallCMakeInclude)
-   include( InstallCMakePackage)
+   include( AddSubdirectorySupport)
+   include( FindPackageSupport)
 endif() 
 
 include( FinalOutput OPTIONAL)
