@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 
 /*
@@ -38,6 +39,7 @@ static dlmalloc_offset_view   mulle_mmap_allocator_view( struct mulle_mmap_alloc
 {
    dlmalloc_offset_view   view;
 
+   memset( &view, 0, sizeof( view));
    view.base     = p->base;
    view.capacity = p->capacity;
    return( view);
@@ -185,6 +187,7 @@ void   _mulle_mmap_allocator_attach( struct mulle_mmap_allocator *p,
 
    __mulle_mmap_allocator_init( p);
 
+   memset( &view, 0, sizeof( view));
    base = mulle_mmap_map_shared_memory( handle, capacity, base_address);
    if( ! base)
       (*p->fail)( mulle_mmap_allocator_as_allocator( p), base, capacity);
@@ -236,6 +239,7 @@ void   _mulle_mmap_allocator_reset( struct mulle_mmap_allocator *p)
 
    // Rebuild the arena in place. This discards every existing allocation, so it
    // requires exclusive access to the region.
+   memset( &view, 0, sizeof( view));
    if( ! p->base ||
        ! dlmalloc_offset_arena_init( p->base, p->capacity) ||
        ! dlmalloc_offset_arena_attach( &view, p->base, p->capacity))
