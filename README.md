@@ -11,11 +11,17 @@ is stored as arena-relative offsets, so the region can be mapped anywhere. A
 payload that stores raw pointers still requires every process to attach at the
 same address; a payload that stores offsets can attach anywhere.
 
-Every mode uses one fixed-capacity arena. There is no growth, so size the region
-for the worst case up front.
+A region created with `mulle_mmap_allocator_init()` has a fixed capacity, so size
+it for the worst case up front. `mulle_mmap_allocator_init_growable()` instead
+reserves a ceiling up front and starts the arena as a smaller first segment,
+expanding into the reserve on demand as allocations run out. Past the ceiling an
+allocation fails the ordinary way, through the `fail` vector.
 
 mulle-mmapallocator can also be used to create a separate allocation
 space, which can then easily be reclaimed by destroying the allocator.
+
+See [DESIGN.md](DESIGN.md) for the offset model, the mode bits, attach
+semantics, growth and locking.
 
 
 
@@ -30,6 +36,7 @@ space, which can then easily be reclaimed by destroying the allocator.
 ## Documentation & Guides
 
 * [API Summary](asset/dox/api/toc)
+* [Design](DESIGN.md)
 
 
 

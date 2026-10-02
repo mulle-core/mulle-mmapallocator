@@ -1,0 +1,14 @@
+ok   the first segment is the size that was asked for
+ok   the window is larger than the first segment
+ok   the arena starts as one segment, grown by nobody
+ok   filling the first segment grows the arena
+ok   the process that grew it says so
+ok   the window is still one segment
+ok   an allocation lands past the first segment
+ok   everything written before the growth is intact
+ok   a second attach lands somewhere else
+ok   the second view sees every segment
+ok   the second view grew nothing itself
+ok   the second view resolves an allocation from the grown segment
+ok   freeing and reallocating across the segments still works
+ok   the window is a hard ceiling

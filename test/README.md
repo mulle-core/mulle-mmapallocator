@@ -1,8 +1,22 @@
 # Run tests
 
-Use `mulle-sde test` or `mulle-test test` to run the tests. Each test is
-specified by a file with file extension `.c`. This file
-is compiled and linked with **mulle-mmapallocator**.
+Use `mulle-sde test` to run the tests. Each test is a file with the `.c`
+extension, compiled and linked with **mulle-mmapallocator**.
+
+The test file is named by its path from the project root, so the `test/`
+prefix is part of the argument:
+
+```bash
+mulle-sde test --platform linux run test/30-shared/grow.c   # one test
+mulle-sde test --platform linux run                         # all of them
+mulle-sde test --platform linux rerun                       # only the failures
+```
+
+`--platform` (and `--configuration`, `--valgrind`, ...) must come *before* the
+`run` subcommand. Without it the platform list comes from the environment; here
+`MULLE_CRAFT_PLATFORMS` is `${MULLE_UNAME}:windows`, so a plain
+`mulle-sde test run ...` cross-builds for Windows and runs the result under
+wine. Pass `--platform linux` for a native build.
 
 Extension   | Description
 ------------|-------------------------

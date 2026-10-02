@@ -1,0 +1,6 @@
+private, fixed                 locking=0 expected 0 ok
+private, locking asked for     locking=1 expected 1 ok
+private, growable              locking=0 expected 0 ok
+private, growable, locking     locking=1 expected 1 ok
+shared                         locking=1 expected 1 ok
+attached to it                 locking=1 expected 1 ok
