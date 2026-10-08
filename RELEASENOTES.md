@@ -2,6 +2,7 @@
 
 
 
+
 feature: add growable reserved-window allocator
 
 * new `mulle_mmap_allocator_init_growable()` reserves a ceiling up front and expands the arena into it on demand, failing through the fail vector only once the window is used up
