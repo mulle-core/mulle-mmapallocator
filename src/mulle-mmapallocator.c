@@ -294,6 +294,40 @@ static size_t   __mulle_mmap_allocator_pages( size_t capacity)
 
 
 /*
+ * The size segment 0 is created with in a growable arena. Only the window is a
+ * mapping, so only it has to be a whole number of pages: the first segment is a
+ * range inside that mapping. Rounding it to a page would report -- and let the
+ * caller allocate -- more than was asked for, which on a 16 KiB-page system
+ * turns an 8 KiB request into 16 KiB. So this keeps the requested size, aligned
+ * the way the arena needs it, and only enlarges a request that cannot hold the
+ * arena header, state, directory and one block at all.
+ *
+ * The floor mirrors dlmalloc_offset_arena_init(); if the two ever disagree, the
+ * arena refuses to initialize and fails through the fail vector rather than
+ * silently shrinking.
+ */
+static size_t   __mulle_mmap_allocator_segment( size_t capacity)
+{
+   size_t   blocks_offset;
+   size_t   minimum;
+
+   blocks_offset  = dlmalloc_offset_align_up(
+                       sizeof( struct dlmalloc_offset_header));
+   blocks_offset  = dlmalloc_offset_align_up( blocks_offset +
+                       sizeof( struct dlmalloc_offset_state));
+   blocks_offset  = dlmalloc_offset_align_up( blocks_offset +
+                       DLMALLOC_OFFSET_MAX_SEGMENTS *
+                       sizeof( struct dlmalloc_offset_segment));
+   minimum        = blocks_offset + DLMALLOC_OFFSET_MIN_BLOCK;
+
+   capacity = dlmalloc_offset_align_up( capacity);
+   if( capacity < minimum)
+      capacity = minimum;
+   return( capacity);
+}
+
+
+/*
  * Map mapping_capacity bytes and start an arena whose first segment is
  * arena_capacity. The two are equal for the fixed allocator; a larger mapping
  * is the window a growable one expands into.
@@ -362,10 +396,12 @@ void   _mulle_mmap_allocator_init_growable( struct mulle_mmap_allocator *p,
 {
    __mulle_mmap_allocator_init( p);
 
-   initial_capacity = __mulle_mmap_allocator_pages( initial_capacity);
+   // the first segment is what the caller asked for, not a page: only the
+   // window is a mapping and therefore a whole number of pages
+   initial_capacity = __mulle_mmap_allocator_segment( initial_capacity);
    growth_limit     = __mulle_mmap_allocator_pages( growth_limit);
    if( growth_limit < initial_capacity)
-      growth_limit = initial_capacity;
+      growth_limit = __mulle_mmap_allocator_pages( initial_capacity);
 
    __mulle_mmap_allocator_make( p, growth_limit, initial_capacity,
                                 mode | ((growth_limit > initial_capacity)
