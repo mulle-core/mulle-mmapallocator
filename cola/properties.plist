@@ -3,12 +3,13 @@
    {
       description="🌍 mulle-mmapallocator a mulle-allocator that shared memory";
       domain="github";
+      language="c";
+      dialect="c";
       name="mulle-mmapallocator";
       user="mulle-core";
       repo="mulle-mmapallocator";
       homepage="https://github.com/mulle-core/mulle-mmapallocator";
       license="BSD-3-Clause";
-       version="0.3.0";
    };
    dependencies =
    (
