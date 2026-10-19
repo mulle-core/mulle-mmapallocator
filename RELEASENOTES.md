@@ -3,20 +3,36 @@
 
 
 
-feature: add growable reserved-window allocator
-
-* new `mulle_mmap_allocator_init_growable()` reserves a ceiling up front and expands the arena into it on demand, failing through the fail vector only once the window is used up
-* new `mulle_mmap_allocator_grow()` plus capacity queries: `get_segment_count,` `get_current_capacity,` `get_grow_count,` `get_initial_capacity` and `get_locking`
-* attach now reads the arena size from the header, so a child can map a growable region at any address and still resolve segments another process grew
-* a growable arena stays a single segment for life; what grows is the current capacity, not the segment count
-* **BREAKING** a private arena no longer takes the arena lock unless `mulle_mmap_allocator_locking` is set; `shared` still forces locking. An unlocked arena reached from two threads is a data race on the free lists
-* the per-process arena view is now persistent instead of rebuilt per call, restoring the segment verification cache and removing a hot-path regression (up to 540x at 40000 allocations)
 
 
 
+* ``_mulle_mmap_allocator_init_growable`` no longer page-rounds ``initial_capacity`.`
+  Only the window is a mapping and has to be a whole number of pages; the first
+  segment is a range inside it, so it is now aligned only to
+  ``DLMALLOC_OFFSET_ALIGN`` and enlarged just enough to hold the arena header. On a
+  16 KiB-page system an 8 KiB request was silently turned into 16 KiB, which
+  broke `test/30-shared/grow.c` on Apple Silicon
+* `test/30-shared/process.c` now attaches the child at an address of the system's
+  choosing and resolves the child's allocation by arena offset instead of storing
+  a raw pointer. A stored pointer forced the creator's address, which an exec'd
+  child cannot obtain on macOS; the attach then failed and the parent printed
+  `(null)`. The test also propagates a failed child instead of reading the region
+  anyway.
 
 
-feature: rebuild mulle-mmapallocator on the relocatable offset arena
+
+* ``_mulle_mmap_allocator_init_growable`` no longer page-rounds ``initial_capacity`.`
+  Only the window is a mapping and has to be a whole number of pages; the first
+  segment is a range inside it, so it is now aligned only to
+  ``DLMALLOC_OFFSET_ALIGN`` and enlarged just enough to hold the arena header. On a
+  16 KiB-page system an 8 KiB request was silently turned into 16 KiB, which
+  broke `test/30-shared/grow.c` on Apple Silicon
+* `test/30-shared/process.c` now attaches the child at an address of the system's
+  choosing and resolves the child's allocation by arena offset instead of storing
+  a raw pointer. A stored pointer forced the creator's address, which an exec'd
+  child cannot obtain on macOS; the attach then failed and the parent printed
+  `(null)`. The test also propagates a failed child instead of reading the region
+  anyway.
 
 
 ### 0.2.2
